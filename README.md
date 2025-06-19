@@ -37,3 +37,17 @@ git remote add origin https://github.com/your_username/samvad.git
 git push -u origin main
 ```
 
+5. Setup pre-commit hooks using lefthook
+```
+go get github.com/evilmartians/lefthook@latest
+go install github.com/evilmartians/lefthook@latest
+
+export PATH="$PATH:$HOME/go/bin"
+lefthook install # Installs pre-commit hooks and pre-push hooks.
+```
+
+6. Install golang-ci linter
+```
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+go get github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+```
