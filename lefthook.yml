@@ -5,3 +5,8 @@ pre-commit:
       glob: "*.go"
       run: golangci-lint run --fix
       stage_fixed: true
+
+commit-msg:
+  scripts:
+    "conventional_commits":
+      runner: bash

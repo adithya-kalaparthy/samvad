@@ -1,0 +1,50 @@
+#!/bin/bash
+
+COMMIT_MSG_FILE="$1"
+FULL_COMMIT_MESSAGE=$(<"$COMMIT_MSG_FILE")
+readarray -t lines <<< "$FULL_COMMIT_MESSAGE"
+MAX_BODY_LINE_LENGTH=72
+MAX_TITLE_LENGTH=52
+
+# 1. Check if title starts with a valid prefix
+CONVENTIONAL_COMMIT_REGEX="^(feat|fix|docs|chore|style|refactor|perf|test|build|ci|revert)(\([a-zA-Z0-9_-]+\))?(!)?:\s.+$"
+if [[ ! "${lines[0]}" =~ $CONVENTIONAL_COMMIT_REGEX ]]; then
+    echo "❌ Error: Commit title must start with a valid prefix (feat, fix, docs, etc.)"
+    echo "  Full message:\n---\n$FULL_COMMIT_MESSAGE\n---"
+    exit 1
+fi
+
+# 2. Check if title is <= 52 characters
+if ((${#lines[0]} > MAX_TITLE_LENGTH)); then
+    echo "❌ Error: Commit title must be <= ${MAX_TITLE_LENGTH} characters"
+    echo "  Full message:\n---\n$FULL_COMMIT_MESSAGE\n---"
+    exit 1
+fi
+
+# 3. Check if there is a blank line after title
+if [[ -n "${lines[1]:-}" ]]; then
+    echo "❌ Error: There must be a blank line after the title"
+    echo "  Found: '${lines[1]}'"
+    echo "  Full message:\n---\n$FULL_COMMIT_MESSAGE\n---"
+    exit 1
+fi
+
+# 4. Check if there is a body after blank line
+if (( ${#lines[@]} < 3 )); then
+    echo "❌ Error: There must be a body after the blank line"
+    echo "  Full message:\n---\n$FULL_COMMIT_MESSAGE\n---"
+    exit 1
+fi
+
+# 5. Check if each body line is <= 72 characters
+for ((i=2; i<${#lines[@]}; i++)); do
+    line="${lines[i]}"
+    if ((${#line} > MAX_BODY_LINE_LENGTH)); then
+        echo "❌ Error: Body line ${i+1} exceeds ${MAX_BODY_LINE_LENGTH} characters"
+        echo "  Full message:\n---\n$FULL_COMMIT_MESSAGE\n---"
+        exit 1
+    fi
+done
+
+echo "✅ Commit message is valid"
+exit 0
