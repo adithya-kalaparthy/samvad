@@ -51,3 +51,9 @@ lefthook install # Installs pre-commit hooks and pre-push hooks.
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 go get github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 ```
+
+7. Install godotenv
+```
+go get github.com/joho/godotenv
+go install github.com/joho/godotenv
+```
