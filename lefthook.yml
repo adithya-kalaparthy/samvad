@@ -3,7 +3,7 @@ pre-commit:
   commands:
     lint:
       glob: "*.go"
-      run: golangci-lint run --fix
+      run: golangci-lint run --fix {staged_files}
       stage_fixed: true
 
 commit-msg:
