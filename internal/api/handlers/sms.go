@@ -21,16 +21,16 @@ func SmsHandler(pinpoint *services.PinpointService) gin.HandlerFunc {
 			return
 		}
 
-		fact, err := services.GenerateFact(request_id)
+		quote, err := services.FetchQuote(request_id)
 		if err != nil {
 			ctx.JSON(
 				http.StatusInternalServerError,
-				gin.H{"status": "ERROR", "error": "Could not generate fact from Gemini"},
+				gin.H{"status": "ERROR", "error": "Could not fetch quote"},
 			)
 			return
 		}
 
-		err = pinpoint.SendSMS(ctx.Request.Context(), req.Recipient, fact)
+		err = pinpoint.SendSMS(ctx.Request.Context(), req.Recipient, quote)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send SMS"})
 			return

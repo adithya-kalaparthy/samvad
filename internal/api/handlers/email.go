@@ -22,13 +22,13 @@ func EmailHandler(ses *services.SesService) gin.HandlerFunc {
 			return
 		}
 
-		fact, err := services.GenerateFact(requestId)
+		quote, err := services.FetchQuote(requestId)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		err = ses.SendEmail(c.Request.Context(), req.Recipient, "A Fun Fact!", fact)
+		err = ses.SendEmail(c.Request.Context(), req.Recipient, "A Fun Fact!", quote)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send email"})
 			return
