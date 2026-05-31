@@ -11,10 +11,7 @@ import (
 
 func main() {
 	router := gin.Default()
-	err := config.LoadEnv()
-	if err != nil {
-		log.Fatal(err)
-	}
+	config.LoadEnv()
 	// Setup routes.
 	routerGroup := router.Group("/api")
 	// Define your middlewares in a slice
