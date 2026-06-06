@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: samvad-api-service
+  # Must match the namespace where the pods are running.
+  namespace: samvad-dev
+spec:
+  # Tells the Service which pods to route traffic to.
+  # Any pod in this namespace with the label "app: samvad-api" will receive traffic.
+  # Must match the pod template labels in deployment.yaml.
+  selector:
+    app: samvad-api
+  type: NodePort
+  ports:
+    - protocol: TCP
+      # port = the port this Service listens on inside the cluster.
+      # Other pods inside the cluster can reach this service at "samvad-api-service:80".
+      port: 80
+      # targetPort = the port the container is actually listening on inside the pod.
+      # Must match containerPort in the deployment file.
+      targetPort: 8080
+      # nodePort = the port exposed on every node's IP address.
+      # Access from outside: http://<node-ip>:30080
+      # Only used when type is NodePort. Must be in range 30000-32767.
+      nodePort: 30080
