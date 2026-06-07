@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: samvad-api-deployment
+  namespace: samvad-dev
+  # Labels on the Deployment itself — used to identify this resource when
+  # listing/filtering with kubectl (e.g., kubectl get deployments -l app=samvad-api)
+  labels:
+    app: samvad-api
+    environment: dev
+spec:
+  # How many pod copies to keep running. If one crashes, k8s spins up another.
+  replicas: 1
+  # Tells the Deployment which pods to manage. Must match the labels
+  # set on the template below. This is how the Deployment "finds" its pods.
+  selector:
+    matchLabels:
+      app: samvad-api
+  # Describes what the actual pod should look like.
+  template:
+    metadata:
+      # These labels go on each pod. They must match selector.matchLabels above.
+      # Services also use these labels to route traffic to the pod.
+      labels:
+        app: samvad-api
+    spec:
+      containers:
+        - name: samvad-api
+          image: samvad-api:latest
+          # Never = use only the locally-built image in minikube's Docker daemon.
+          # Won't try to pull from Docker Hub or ECR.
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          # Env vars are injected from the k8s Secret "samvad-api-secret".
+          # Each key in the Secret becomes an environment variable in the container.
+          # The secret.yaml file is excluded from git — never commit real secrets.
+          env:
+            - name: VALID_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: samvad-api-secret
+                  key: VALID_API_KEY
+          resources:
+            # requests = minimum guaranteed. k8s uses this to pick a node
+            # with enough free capacity. Pod won't start if no node can meet this.
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            # limits = maximum allowed. Pod is throttled if it exceeds this.
+            limits:
+              memory: "128Mi"
+              cpu: "500m"

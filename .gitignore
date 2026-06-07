@@ -1,2 +1,4 @@
-/bin/\n/vendor/\n*.env
+/bin/
+/vendor/
 *.env
+k8s/local/secret.yaml
