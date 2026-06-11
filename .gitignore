@@ -2,3 +2,4 @@
 /vendor/
 *.env
 k8s/local/secret.yaml
+terraform/local/terraform.tfvars
