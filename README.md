@@ -163,6 +163,96 @@ Step 4: Tear it down
 
 This will kill the tunnel, delete all K8s resources (deployment, service, secret, namespace), and stop minikube. Everything, everywhere, all at once. 💥
 
-### Production? Not yet, young padawan 🧘
+## Local Terraform Deployment 🏗️☸️
 
-This setup is for local development only. The `imagePullPolicy: Never` and `minikube image load` pattern won't work on a real cluster. For AWS EKS (coming in a future episode), we'll push the image to ECR, set `imagePullPolicy: Always`, and use IAM roles instead of hardcoded secrets. Stay tuned.
+Because YAML is so last week. Terraform manages the same K8s resources but with variables, state, and the ability to destroy everything with one command.
+
+### Prerequisites (same as above +)
+- [Terraform](https://developer.hashicorp.com/terraform/downloads) ≥ 1.15
+
+### Folder structure
+```
+terraform/local/
+├── main.tf              # The brain — namespace, secret, deployment, service
+├── variables.tf         # The knobs — image, ports, API key, namespace
+├── providers.tf         # The plumbing — minikube kubeconfig
+├── outputs.tf           # The receipts — host_port, service_port, node_port
+├── terraform.tfvars     # Your secrets (gitignored 🤫)
+└── terraform.tfvars.example  # Template with placeholders
+```
+
+### The resources (and what they do)
+
+| Resource | What it creates | Equivalent YAML |
+|---|---|---|
+| `kubernetes_namespace_v1` | `samvad-dev` namespace | `k8s/local/namespace.yaml` |
+| `kubernetes_secret_v1` | `samvad-api-secret` with base64'd API key | `k8s/local/secret.yaml` |
+| `kubernetes_deployment_v1` | 2 replicas, resource limits, env from secret | `k8s/local/deployment.yaml` |
+| `kubernetes_service_v1` | NodePort service (port 80 → target 8080 → node 30080) | `k8s/local/service.yaml` |
+
+### The variables (in `variables.tf`)
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `namespace_name` | `samvad-dev` | K8s namespace |
+| `pod_name` | `samvad-api` | Label on pods (used by selector) |
+| `container_port` | `8080` | App listens here |
+| `service_port` | `80` | Service listens here (cluster-internal) |
+| `node_port` | `30080` | Exposed on minikube VM |
+| `host_port` | `8080` | Your laptop port for port-forward |
+| `valid_api_key` | *(required)* | Your API key (sensitive!) |
+
+### The dev loop 🎯
+
+**One script does it all:**
+```bash
+./scripts/terraform_deploy.sh
+```
+
+This magical incantation:
+1. 🏗️ Builds the Docker image
+2. 🏁 Checks minikube is running (exits with instructions if not)
+3. 📦 Loads image into minikube
+4. 📋 `terraform init` (downloads provider)
+5. 👀 `terraform plan` (shows what will change)
+6. 🛠️ `terraform apply -auto-approve` (creates everything)
+7. 🔌 `kubectl port-forward` to `localhost:8080` (background)
+
+Test it:
+```bash
+curl http://localhost:8080/api/v1/health
+```
+
+**Tear it down:**
+```bash
+./scripts/terraform_destroy.sh
+```
+
+This kills the port-forward tunnel and runs `terraform destroy -auto-approve`. Poof! 💨
+
+### State & Git Hygiene 🧼
+
+| File | Git? | Why |
+|---|---|---|
+| `.terraform.lock.hcl` | ✅ **Commit** | Pins provider versions (no surprise upgrades) |
+| `.terraform/` | ❌ **Ignore** | Local cache, platform-specific binaries |
+| `terraform.tfvars` | ❌ **Ignore** | Contains your actual API key |
+| `*.tfstate` | ❌ **Ignore** | State file = secrets + machine-specific |
+
+> **Pro tip:** For teams, use remote state (S3 + DynamoDB, or Terraform Cloud) instead of local `.tfstate` files.
+
+### Common Gotchas 🐛
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Port-forward times out | Service selector didn't match pod labels | Fixed: selector now only requires `app` label |
+| "Minikube not running" | You forgot to start it | Script tells you: `minikube start --driver docker` |
+| Probes restart pods | `/health` needs API key | Removed probes; add public `/live` endpoint later |
+| `terraform apply` fails | State drift or manual K8s changes | `terraform refresh` then re-apply |
+
+### Next Level 🚀
+
+1. **Module-ify** — Extract reusable module, add `environments/local` and `environments/eks`
+2. **Remote state** — S3 bucket + DynamoDB locking
+3. **Public health endpoint** — Add `/live` and `/ready` without auth for probes
+4. **EKS migration** — Swap provider config, use `type = "LoadBalancer"`, IAM roles for secrets
