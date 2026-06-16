@@ -139,7 +139,7 @@ docker build -t samvad-api:latest .
 
 Step 2: Deploy everything
 ```
-./scripts/local_deploy.sh
+./scripts/deployments/local/local_deploy.sh
 ```
 
 This script will:
@@ -158,7 +158,7 @@ curl http://localhost:8080/api/v1/health
 
 Step 4: Tear it down
 ```
-./scripts/local_teardown.sh
+./scripts/deployments/local/local_teardown.sh
 ```
 
 This will kill the tunnel, delete all K8s resources (deployment, service, secret, namespace), and stop minikube. Everything, everywhere, all at once. 💥
@@ -172,13 +172,18 @@ Because YAML is so last week. Terraform manages the same K8s resources but with 
 
 ### Folder structure
 ```
-terraform/local/
-├── main.tf              # The brain — namespace, secret, deployment, service
-├── variables.tf         # The knobs — image, ports, API key, namespace
-├── providers.tf         # The plumbing — minikube kubeconfig
-├── outputs.tf           # The receipts — host_port, service_port, node_port
-├── terraform.tfvars     # Your secrets (gitignored 🤫)
-└── terraform.tfvars.example  # Template with placeholders
+terraform/
+├── modules/samvad-app/          # Reusable module
+│   ├── main.tf                  # Resources (namespace, secret, deployment, service)
+│   ├── variables.tf             # Input variables (env-specific ones required)
+│   └── outputs.tf               # Host port, service port, node port
+└── environments/
+    └── local/                   # Local dev environment (minikube)
+        ├── main.tf              # Module call with local overrides
+        ├── variables.tf         # All local env config in one place
+        ├── providers.tf         # Minikube kubeconfig
+        ├── terraform.tfvars     # Your secrets (gitignored 🤫)
+        └── terraform.tfvars.example
 ```
 
 ### The resources (and what they do)
@@ -190,23 +195,11 @@ terraform/local/
 | `kubernetes_deployment_v1` | 2 replicas, resource limits, env from secret | `k8s/local/deployment.yaml` |
 | `kubernetes_service_v1` | NodePort service (port 80 → target 8080 → node 30080) | `k8s/local/service.yaml` |
 
-### The variables (in `variables.tf`)
-
-| Variable | Default | What it controls |
-|---|---|---|
-| `namespace_name` | `samvad-dev` | K8s namespace |
-| `pod_name` | `samvad-api` | Label on pods (used by selector) |
-| `container_port` | `8080` | App listens here |
-| `service_port` | `80` | Service listens here (cluster-internal) |
-| `node_port` | `30080` | Exposed on minikube VM |
-| `host_port` | `8080` | Your laptop port for port-forward |
-| `valid_api_key` | *(required)* | Your API key (sensitive!) |
-
 ### The dev loop 🎯
 
 **One script does it all:**
 ```bash
-./scripts/terraform_deploy.sh
+./scripts/deployments/local/terraform_deploy.sh
 ```
 
 This magical incantation:
@@ -225,7 +218,7 @@ curl http://localhost:8080/api/v1/health
 
 **Tear it down:**
 ```bash
-./scripts/terraform_destroy.sh
+./scripts/deployments/local/terraform_destroy.sh
 ```
 
 This kills the port-forward tunnel and runs `terraform destroy -auto-approve`. Poof! 💨
@@ -252,7 +245,7 @@ This kills the port-forward tunnel and runs `terraform destroy -auto-approve`. P
 
 ### Next Level 🚀
 
-1. **Module-ify** — Extract reusable module, add `environments/local` and `environments/eks`
+1. **Module-ify** ✅ — Reusable module with `environments/local` and `environments/eks` (TODO)
 2. **Remote state** — S3 bucket + DynamoDB locking
 3. **Public health endpoint** — Add `/live` and `/ready` without auth for probes
 4. **EKS migration** — Swap provider config, use `type = "LoadBalancer"`, IAM roles for secrets

@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 echo ""
@@ -14,9 +14,9 @@ pkill -f "kubectl port-forward.*samvad-api-service" 2>/dev/null || echo "   No t
 
 echo ""
 echo "🗑️  Step 2: Destroying everything with Terraform..."
-echo "   (terraform -chdir=terraform/local destroy -auto-approve)"
-terraform -chdir=terraform/local destroy -auto-approve
+echo "   (terraform -chdir=terraform/environments/local destroy -auto-approve)"
+terraform -chdir=terraform/environments/local destroy -auto-approve
 
 echo ""
 echo "🔥 All gone! Bye bye SAMVAD."
-echo "    To rebuild: ./scripts/terraform_deploy.sh"
+echo "    To rebuild: ./scripts/deployments/local/terraform_deploy.sh"
