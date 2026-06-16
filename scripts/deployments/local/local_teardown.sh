@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 echo ""
@@ -29,4 +29,4 @@ minikube stop
 
 echo ""
 echo "🔥 All gone! Bye bye SAMVAD."
-echo "   To rebuild: ./scripts/local_deploy.sh"
+echo "    To rebuild: ./scripts/deployments/local/local_deploy.sh"

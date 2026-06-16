@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 echo ""
@@ -15,8 +15,7 @@ docker build -t samvad-api:latest .
 
 echo ""
 echo "🏁 Step 2: Checking minikube is awake..."
-minikube status > /dev/null 2>&1
-if [ $? -ne 0 ]; then
+if ! minikube status > /dev/null 2>&1; then
   echo "   ❌ Minikube is not running! Start it first:"
   echo "      minikube start --driver docker"
   exit 1
@@ -30,22 +29,22 @@ minikube image load samvad-api:latest
 
 echo ""
 echo "📋 Step 4: Initializing Terraform..."
-echo "   (terraform -chdir=terraform/local init)"
-terraform -chdir=terraform/local init
+echo "   (terraform -chdir=terraform/environments/local init)"
+terraform -chdir=terraform/environments/local init
 
 echo ""
 echo "👀 Step 5: Showing the plan (review before applying)..."
-echo "   (terraform -chdir=terraform/local plan)"
-terraform -chdir=terraform/local plan
+echo "   (terraform -chdir=terraform/environments/local plan)"
+terraform -chdir=terraform/environments/local plan
 
 echo ""
 echo "🛠️  Step 6: Applying the configuration..."
-echo "   (terraform -chdir=terraform/local apply -auto-approve)"
-terraform -chdir=terraform/local apply -auto-approve
+echo "   (terraform -chdir=terraform/environments/local apply -auto-approve)"
+terraform -chdir=terraform/environments/local apply -auto-approve
 
 # Extract the host port and service port from terraform variables
-HOST_PORT=$(terraform -chdir=terraform/local output -raw host_port 2>/dev/null || echo "8080")
-SERVICE_PORT=$(terraform -chdir=terraform/local output -raw service_port 2>/dev/null || echo "80")
+HOST_PORT=$(terraform -chdir=terraform/environments/local output -raw host_port 2>/dev/null || echo "8080")
+SERVICE_PORT=$(terraform -chdir=terraform/environments/local output -raw service_port 2>/dev/null || echo "80")
 
 echo ""
 echo "🔌 Step 7: Opening port-forward tunnel in the background..."
@@ -54,4 +53,4 @@ kubectl port-forward -n samvad-dev service/samvad-api-service "${HOST_PORT}:${SE
 
 echo ""
 echo "🎉 All done! Test with: curl http://localhost:${HOST_PORT}/api/v1/health"
-echo "    Stop the tunnel with: kill %1  OR  ./scripts/terraform_destroy.sh"
+echo "    Stop the tunnel with: kill %1  OR  ./scripts/deployments/local/terraform_destroy.sh"

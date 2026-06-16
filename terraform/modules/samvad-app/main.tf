@@ -6,8 +6,8 @@ locals {
   # The Deployment, the Pods, and the Service all share these exact labels.
   # If they don't match → no traffic flows (silent failure, very confusing).
   labels = {
-    "app"         = "samvad-api"
-    "environment" = "development"
+    "app"         = var.pod_name
+    "environment" = var.environment
   }
 }
 
@@ -16,7 +16,7 @@ locals {
 # Run `kubectl get namespaces` to see all rooms.
 resource "kubernetes_namespace_v1" "samvad_dev" {
   metadata {
-    name   = "samvad-dev"
+    name   = var.namespace_name
     labels = local.labels
   }
 }
@@ -27,7 +27,7 @@ resource "kubernetes_namespace_v1" "samvad_dev" {
 # The actual value comes from terraform.tfvars (which is gitignored 🤫).
 resource "kubernetes_secret_v1" "samvad_api_secret" {
   metadata {
-    name      = "samvad-api-secret"
+    name      = var.secret_name
     namespace = var.namespace_name
   }
 
@@ -49,7 +49,7 @@ resource "kubernetes_deployment_v1" "app" {
   }
 
   spec {
-    replicas = 2
+    replicas = var.replicas
 
     # 🎯 Selector tells the Deployment which Pods it owns.
     # Must match the labels on the pod template below.
@@ -74,7 +74,8 @@ resource "kubernetes_deployment_v1" "app" {
           image = "${var.image_name}:${var.image_tag}"
           # 🚫 "Never" = don't try to pull from Docker Hub or AWS artifact registry.
           # We use the image already loaded into minikube's Docker.
-          image_pull_policy = "Never"
+          # For EKS, change to "Always" and push image to ECR.
+          image_pull_policy = var.image_pull_policy
 
           port {
             container_port = var.container_port
@@ -101,7 +102,7 @@ resource "kubernetes_deployment_v1" "app" {
             name = "VALID_API_KEY"
             value_from {
               secret_key_ref {
-                name = "samvad-api-secret"
+                name = var.secret_name
                 key  = "VALID_API_KEY"
               }
             }
@@ -132,16 +133,16 @@ resource "kubernetes_service_v1" "samvad_api_service" {
 
     port {
       # 🚪 port = the port this Service listens on inside the cluster.
-      # Other Pods can reach it at "samvad-api-deployment-service:80".
+      # Other Pods can reach it at "samvad-api-service:80".
       port = var.service_port
       # 🎯 target_port = the port the container is actually listening on.
       # Must match container_port in the Deployment.
       target_port = var.container_port
       # 🌐 node_port = the port exposed on every node's IP address.
-      # Access from outside: http://<minikube-ip>:30080
+      # Access from outside: http://<node-ip>:30080
       # Only works when type = "NodePort". Must be 30000-32767.
       node_port = var.node_port
     }
-    type = "NodePort"
+    type = var.service_type
   }
 }

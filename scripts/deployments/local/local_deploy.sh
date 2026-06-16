@@ -3,7 +3,7 @@ set -e
 
 # Make the script work no matter where you call it from.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "🚀 Welcome to the SAMVAD local deployment circus!"
