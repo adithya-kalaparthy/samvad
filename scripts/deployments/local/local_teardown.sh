@@ -13,19 +13,27 @@ echo "🧹 Step 1: Killing the port-forward tunnel..."
 pkill -f "kubectl port-forward.*samvad-api-service" 2>/dev/null || echo "   No tunnel found, skipping."
 
 echo ""
-echo "🗑️  Step 2: Deleting everything in samvad-dev namespace..."
-echo "   (kubectl delete deployment,service,secret --all -n samvad-dev)"
-kubectl delete deployment,service,secret --all -n samvad-dev
+echo "🎯 Step 2: Switching to samvad-local context..."
+kubectl config use-context samvad-local 2>/dev/null || echo "   Context not found, using current context."
 
 echo ""
-echo "🧊 Step 3: Deleting the namespace..."
+echo "🗑️  Step 3: Deleting everything in samvad-dev namespace..."
+kubectl delete deployment,service,secret --all
+
+echo ""
+echo "🧊 Step 4: Deleting the namespace..."
 echo "   (kubectl delete namespace samvad-dev)"
 kubectl delete namespace samvad-dev
 
 echo ""
-echo "⏹️  Step 4: Stopping minikube..."
+echo "⏹️  Step 5: Stopping minikube..."
 echo "   (minikube stop)"
 minikube stop
+
+echo ""
+echo "🧹 Step 6: Cleaning up samvad-local context..."
+kubectl config delete-context samvad-local 2>/dev/null || echo "   Already gone."
+kubectl config use-context minikube 2>/dev/null || true
 
 echo ""
 echo "🔥 All gone! Bye bye SAMVAD."
