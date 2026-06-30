@@ -1,0 +1,20 @@
+# 🏷️ apiVersion = which version of the Kubernetes API to use.
+# "v1" is the stable core API group — used for Namespace, Service, Secret, etc.
+apiVersion: v1
+
+# 🏷️ kind = what type of Kubernetes resource this is.
+# Case-sensitive: must be "Namespace" (capital N), not "namespace".
+kind: Namespace
+
+# 📦 metadata = data that identifies and describes the resource.
+metadata:
+  # 📛 name = unique identifier for this resource within the cluster.
+  # This is the name you use with: kubectl get namespace samvad-prod
+  # Different from local (samvad-dev) — keeps prod resources isolated.
+  name: samvad-prod
+
+  # 🏷️ labels = key-value pairs for organizing, selecting, and filtering resources.
+  # Used by kubectl commands (kubectl get pods -l environment=production)
+  # and by other tools (monitoring, CI/CD) to identify prod resources.
+  labels:
+    environment: production

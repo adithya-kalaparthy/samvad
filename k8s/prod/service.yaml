@@ -1,0 +1,48 @@
+# 🏷️ apiVersion = "v1" is the stable core API group.
+apiVersion: v1
+
+# 🏷️ kind = Service exposes pods as a network service inside or outside the cluster.
+# Case-sensitive: must be "Service". 
+kind: Service
+
+# 📦 metadata — identifies and describes this service.
+metadata:
+  # 📛 name = stable DNS name inside the cluster.
+  # Other pods can reach this service at: http://samvad-service:80
+  # Different from local (samvad-api-service) to avoid confusion.
+  name: samvad-service
+
+  # 🌍 namespace = must match where the pods are running.
+  # Services are namespace-scoped — only pods in samvad-prod can
+  # reach this service by its short name.
+  namespace: samvad-prod
+
+# ⚙️ spec = the desired state of this service.
+spec:
+  # 🎯 selector = which pods receive traffic. Must match pod labels
+  # from the deployment's template.metadata.labels exactly.
+  # If they don't match → service has no endpoints → traffic drops.
+  # The deployment uses "app: samvad-api", so this must match.
+  selector:
+    app: samvad-api
+
+  # 🌐 type = how this service is exposed.
+  # "LoadBalancer" provisions an AWS ALB (Application Load Balancer)
+  # with a public DNS name. AWS automatically creates it.
+  # Different from local which uses "NodePort" (no cloud LB needed).
+  type: LoadBalancer
+
+  # 🚪 ports = list of port mappings (notice the "-" list marker).
+  ports:
+    # 🚪 port = port the service listens on internally (cluster-internal).
+    # Other pods reach the app at "samvad-service:80".
+    - port: 80
+
+      # 🎯 targetPort = the port the container is actually listening on.
+      # Must match containerPort in the deployment (8080).
+      # The service forwards traffic from port 80 → targetPort 8080.
+      targetPort: 8080
+
+    # 💡 Note: No "protocol: TCP" needed — TCP is the default.
+    # 💡 Note: No "nodePort" — not valid for LoadBalancer type.
+    #   AWS assigns a random high port or you can specify one.
