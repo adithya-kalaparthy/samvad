@@ -1,0 +1,105 @@
+# 🏷️ apiVersion = which version of the Kubernetes API to use.
+# "apps/v1" is the stable API group for Deployment, StatefulSet, DaemonSet, etc.
+apiVersion: apps/v1
+
+# 🏷️ kind = Deployment manages a set of identical pods (replicas).
+# It handles rolling updates, rollbacks, self-healing (restarts on crash).
+kind: Deployment
+
+# 📦 metadata — identifies and describes this deployment.
+metadata:
+  # 📛 name = this deployment's name. Used in kubectl commands and logs.
+  name: samvad-api-deployment
+
+  # 🌍 namespace = which Kubernetes namespace this deployment belongs to.
+  # All resources for this deployment live here, isolated from other apps.
+  # Namespaces are a hard security boundary for network policies, RBAC, etc.
+  namespace: samvad-prod
+
+  # 🏷️ labels on the Deployment itself — used to identify this resource
+  # when listing/filtering (e.g., kubectl get deployments -l app=samvad-api).
+  # These DON'T need to match the pod labels (those are inside spec.template).
+  labels:
+    app: samvad-api
+    environment: production
+
+# ⚙️ spec = the desired state of this deployment.
+spec:
+  # 🔁 replicas = how many pod copies to keep running.
+  # If one crashes, Kubernetes spins up another to maintain the count.
+  # 3 replicas = high availability across multiple nodes.
+  replicas: 3
+
+  # 🎯 selector = which pods this deployment manages.
+  # Must match the labels on the pod template (spec.template.metadata.labels).
+  # This is how the deployment "finds" its pods and ensures the right count.
+  selector:
+    matchLabels:
+      app: samvad-api
+
+  # 📋 template = the blueprint for creating pods.
+  # Every field below defines what each pod looks like.
+  template:
+    metadata:
+      # 🏷️ labels on each pod. These must match selector.matchLabels above.
+      # The Service also uses these labels to route traffic to pods.
+      labels:
+        app: samvad-api
+
+    # ⚙️ spec = the desired state of each pod.
+    spec:
+      # 🐳 containers = list of containers running inside each pod.
+      # Most pods have one container, but sidecar patterns use multiple.
+      containers:
+        # 📛 name = container name (used for logs, exec, etc.).
+        - name: samvad-api
+
+          # 🖼️ image = which container image to run.
+          # Full ECR URI format: <account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>
+          # Unlike local ("samvad-api:latest" with Never pull policy),
+          # this is pulled from AWS ECR every time a pod starts.
+          image: 572391417926.dkr.ecr.eu-north-1.amazonaws.com/samvad-api:latest
+
+          # 🚫 imagePullPolicy = when to pull the image.
+          # "Always" = check ECR for the latest image every time a pod starts.
+          # Necessary because ECR tags can be overwritten (unlike local minikube).
+          imagePullPolicy: Always
+
+          # 🔌 ports = list of container ports to expose.
+          ports:
+            # 🎯 containerPort = the port the Go app listens on inside the container.
+            # Must match what the Go code binds to (e.g., http.ListenAndServe(":8080", ...)).
+            # Also must match targetPort in service.yaml.
+            - containerPort: 8080
+
+          # 📨 env = environment variables injected into the container.
+          # These override any .env file or default values in the code.
+          env:
+            # 🔑 VALID_API_KEY = the API key the Go app reads at startup.
+            # Value comes from the Kubernetes Secret, not hardcoded here.
+            - name: VALID_API_KEY
+              valueFrom:
+                # 🔗 secretKeyRef = reference to a Kubernetes Secret resource.
+                # K8s injects the secret value as an env var at pod start time.
+                # The actual value lives in secret.yaml (which is gitignored).
+                secretKeyRef:
+                  # 📛 name = the Secret resource name (must match secret.yaml).
+                  name: samvad-api-secret
+                  # 🔑 key = the key inside the Secret's data/stringData field.
+                  key: VALID_API_KEY
+
+          # 📊 resources = CPU/memory guarantees and limits for this container.
+          # Kubernetes uses requests to pick a node with enough free capacity.
+          # limits prevent a noisy neighbor from starving other pods.
+          resources:
+            # 📈 requests = minimum guaranteed resources.
+            # For Fargate, requests and limits must be identical.
+            # Fargate does not deal in tiny fractions of servers. The absolute
+            # smallest micro-VM you can rent from AWS Fargate is 0.25 vCPU (250m)
+            # and 0.5 GB (512Mi) of memory.
+            requests:
+              memory: "256Mi"  # Perfectly fills the 0.5 GB tier after the 256Mi tax (tax is needed for Kubelet process to run)
+              cpu: "250m"      # 0.25 vCPU (the Fargate minimum)
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
