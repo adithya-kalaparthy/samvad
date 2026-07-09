@@ -1,0 +1,73 @@
+# 🏷️ apiVersion = the version of the eksctl API this config file follows.
+# "eksctl.io/v1alpha5" is the current stable version for eksctl config files.
+# Changing this would change which fields are available.
+apiVersion: eksctl.io/v1alpha5
+
+# 🏷️ kind = what type of resource this config describes.
+# Always "ClusterConfig" — tells eksctl "this is a cluster definition file."
+kind: ClusterConfig
+
+# 📦 metadata = basic information about the cluster being created.
+metadata:
+  # 📛 name = the name of your EKS cluster.
+  # Shows up in: AWS Console → EKS → Clusters, and your k8s context name.
+  # Also the prefix for AWS resources eksctl creates (VPC, security groups, etc.)
+  name: samvad-cluster
+
+  # 🌍 region = which AWS region the cluster lives in.
+  # All resources (VPC, EKS control plane, ECR) will be created here.
+  # eu-north-1 = Stockholm — choose the closest region to you.
+  # Different regions have different pricing and available instance types.
+  region: eu-north-1
+
+  # 🔢 version = the Kubernetes version for the EKS control plane.
+  version: "1.36"
+
+# 🖥️ managedNodeGroups = manages EC2 instances for running pods.
+# Setting this to an empty list [] tells eksctl:
+# "Do NOT provision any EC2 servers at all."
+# This saves money because:
+#   - No EC2 instances running 24/7
+#   - No need for NAT Gateway (since there's no EC2 to route traffic from)
+#   - No node management overhead (patching, scaling, AMI updates)
+# Without managedNodeGroups, ALL pods must run on Fargate instead.
+managedNodeGroups: []
+
+# 📋 fargateProfiles = tells EKS which pods should run on Fargate (serverless).
+# Fargate = AWS runs your containers without you managing any servers.
+# You pay only for vCPU + memory per second your pod runs.
+# There's no charge when your pods are idle.
+# ⚠️ Note: The first Fargate pod can take 60-90 seconds to start
+#   while AWS provisions infrastructure for it.
+# ⚠️ Note: Fargate has some limitations — no DaemonSets, no privileged
+#   containers, no hostNetwork mode. These don't affect simple web apps.
+fargateProfiles:
+  # 📛 name = a descriptive name for this Fargate profile.
+  - name: samvad-fargate-profile
+
+    # 🎯 selectors = rules that decide which pods go to Fargate.
+    # Any pod running in a matching namespace gets scheduled on Fargate.
+    selectors:
+      # 🌍 This selector says: "Run ALL pods in namespace 'samvad-prod' on Fargate."
+      # When your deployment creates pods in samvad-prod, Fargate runs them.
+      # ⚠️ Important: eksctl automatically handles the kube-system namespace
+      # (coredns pods) on Fargate — you don't need to specify it here.
+      - namespace: samvad-prod
+
+# 🌐 vpc = Virtual Private Cloud — the isolated network for all your resources.
+# If you don't specify this, eksctl creates a default VPC with public+private
+# subnets and a NAT Gateway (which costs ~$36/mo if left running).
+vpc:
+  # 🚪 nat = Network Address Translation — allows private subnets to reach the internet.
+  # For EKS, Fargate pods in private subnets need this to pull container images from ECR,
+  # download base images from Docker Hub, or reach any external API.
+  nat:
+    # 🔧 gateway = how many NAT Gateways to create.
+    # Options:
+    #   - "Single" (default): One NAT Gateway (~$36/mo) — cheaper, single point of failure
+    #   - "HighlyAvailable": One per AZ (~$108/mo) — production, no single point of failure
+    #   - "Disable": No NAT Gateway ($0/mo) — pods can't reach the internet,
+    #     but saves money. Only works if you set up VPC Endpoints for ECR, S3, etc.
+    # For learning: "Disable" or "Single" is fine for a 1-hour session.
+    # The cost difference for 1 hour is negligible (~$0.05).
+    gateway: Disable
