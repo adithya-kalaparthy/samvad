@@ -39,6 +39,13 @@ if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
 else
   echo "✅ namespace '$NAMESPACE' already exists."
 fi
+# (Read the output above, then note the cluster name and user below.)
+# ✏️ Replace these with whatever kubectl config get-contexts shows:
+EKSCTL_CLUSTER="samvad-cluster.ap-south-1.eksctl.io"  # 🏰 The real cluster name eksctl picked.
+EKSCTL_USER="samvad-cluster.ap-south-1.eksctl.io"     # 🧑‍💻 The user that eksctl created.
+
+# --- Step 4: Create the Namespace ---
+kubectl apply -f "$K8S_DIR/namespace.yaml" --server-side --force-conflicts
 
 # --- Step 5: Create & Switch to samvad-prod Context ---
 kubectl config set-context "$CONTEXT_NAME" \
