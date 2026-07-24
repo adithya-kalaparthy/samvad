@@ -16,9 +16,9 @@ metadata:
 
   # 🌍 region = which AWS region the cluster lives in.
   # All resources (VPC, EKS control plane, ECR) will be created here.
-  # eu-north-1 = Stockholm — choose the closest region to you.
+  # ap-south-1 = Mumbai — choose the closest region to you.
   # Different regions have different pricing and available instance types.
-  region: eu-north-1
+  region: ap-south-1
 
   # 🔢 version = the Kubernetes version for the EKS control plane.
   version: "1.36"
@@ -70,4 +70,4 @@ vpc:
     #     but saves money. Only works if you set up VPC Endpoints for ECR, S3, etc.
     # For learning: "Disable" or "Single" is fine for a 1-hour session.
     # The cost difference for 1 hour is negligible (~$0.05).
-    gateway: Disable
+    gateway: Single

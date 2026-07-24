@@ -1,6 +1,6 @@
 set -euo pipefail
 
-REGION="eu-north-1"
+REGION="ap-south-1"
 ACCOUNT="572391417926"
 REPO_NAME="samvad-api"
 IMAGE_TAG="latest"

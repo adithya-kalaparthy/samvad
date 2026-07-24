@@ -58,7 +58,7 @@ spec:
           # Full ECR URI format: <account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>
           # Unlike local ("samvad-api:latest" with Never pull policy),
           # this is pulled from AWS ECR every time a pod starts.
-          image: 572391417926.dkr.ecr.eu-north-1.amazonaws.com/samvad-api:latest
+          image: 572391417926.dkr.ecr.ap-south-1.amazonaws.com/samvad-api:latest
 
           # 🚫 imagePullPolicy = when to pull the image.
           # "Always" = check ECR for the latest image every time a pod starts.
